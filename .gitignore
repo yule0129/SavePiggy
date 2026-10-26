@@ -1,0 +1,15 @@
+# Local preview screenshots
+/preview-*.png
+
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+*.p8
+*.p12
+*.mobileprovision
+*.pem
+
+# OS files
+.DS_Store
+Thumbs.db
