@@ -1,0 +1,10 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+  <application>
+    <service android:name="cn.savepiggy.capture.PaymentListener" android:exported="true"
+      android:label="SavePiggy 微信付款候选接入" android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+      <intent-filter><action android:name="android.service.notification.NotificationListenerService" /></intent-filter>
+    </service>
+  </application>
+</manifest>

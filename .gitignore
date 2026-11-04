@@ -13,3 +13,13 @@
 # OS files
 .DS_Store
 Thumbs.db
+
+# Local Android probe builds and signing files
+/notification-probe/build/
+*.keystore
+*.jks
+/.gradle-cache/
+/.android-cache/
+/.toolchains/
+/.cxx/
+/builds/
