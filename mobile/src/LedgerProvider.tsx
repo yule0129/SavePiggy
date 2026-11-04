@@ -3,6 +3,9 @@ import type { PropsWithChildren } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { decodeLedger } from './ledger';
 import type { Entry } from './ledger';
+import { AppState } from 'react-native';
+import { paymentInbox } from './nativePaymentInbox';
+import { mergePaymentEvents } from './paymentCapture';
 
 const STORAGE_KEY = 'savepiggy.ledger.v1';
 
@@ -11,6 +14,7 @@ function useLedgerState() {
   const [loading, setLoading] = useState(true);
   const [storageError, setStorageError] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [captureError, setCaptureError] = useState('');
   const writing = useRef(false);
   const current = useRef<Entry[]>([]);
   const accept = useCallback((loaded: Entry[]) => {
@@ -36,7 +40,7 @@ function useLedgerState() {
     return () => { active = false; };
   }, [accept]);
 
-  async function persist(next: Entry[]): Promise<boolean> {
+  const persist = useCallback(async (next: Entry[]): Promise<boolean> => {
     if (writing.current || storageError) return false;
     writing.current = true;
     setBusy(true);
@@ -47,8 +51,30 @@ function useLedgerState() {
       return true;
     } catch { return false; }
     finally { writing.current = false; setBusy(false); }
-  }
-  return { entries, loading, storageError, busy, current, writing, load, persist };
+  }, [storageError]);
+
+  useEffect(() => {
+    if (loading || storageError || !paymentInbox.supported) return;
+    let syncing = false;
+    const sync = async () => {
+      if (syncing || writing.current || AppState.currentState !== 'active') return;
+      syncing = true;
+      try {
+        const events = paymentInbox.list();
+        if (!events.length) return;
+        const merged = mergePaymentEvents(current.current, events);
+        if (merged.added && !await persist(merged.entries)) throw new Error('候选未能写入账本，原生队列已保留，稍后重试');
+        paymentInbox.acknowledge(merged.acceptedIds);
+        setCaptureError('');
+      } catch (error) { setCaptureError(error instanceof Error ? error.message : '付款候选同步失败，队列已保留'); }
+      finally { syncing = false; }
+    };
+    void sync();
+    const subscription = AppState.addEventListener('change', state => { if (state === 'active') void sync(); });
+    const timer = setInterval(() => { void sync(); }, 2000);
+    return () => { subscription.remove(); clearInterval(timer); };
+  }, [loading, storageError, persist]);
+  return { entries, loading, storageError, busy, captureError, current, writing, load, persist };
 }
 
 const LedgerContext = createContext<ReturnType<typeof useLedgerState> | null>(null);

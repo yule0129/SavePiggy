@@ -7,8 +7,14 @@ export type Entry = {
   merchant: string;
   category: Category | null;
   state: 'pending' | 'saved';
-  source: 'demo' | 'manual';
+  source: 'demo' | 'manual' | 'csv' | 'wechat_notification';
   createdAt: string;
+  channel?: string;
+  note?: string;
+  externalId?: string;
+  importFingerprint?: string;
+  sourceChannel?: string;
+  captureId?: string;
 };
 
 export function parseAmount(value: string): number | null {
@@ -61,7 +67,8 @@ export function decodeLedger(raw: string | null): Entry[] {
     if (!entry || typeof entry.id !== 'string' || !entry.id || ids.has(entry.id)
       || !Number.isSafeInteger(entry.amountFen) || entry.amountFen <= 0 || entry.amountFen > 999999999
       || typeof entry.merchant !== 'string' || !['pending', 'saved'].includes(entry.state)
-      || !['demo', 'manual'].includes(entry.source)
+      || !['demo', 'manual', 'csv', 'wechat_notification'].includes(entry.source)
+      || !['channel', 'note', 'externalId', 'importFingerprint', 'sourceChannel', 'captureId'].every(key => entry[key] === undefined || typeof entry[key] === 'string')
       || !(entry.category === null || CATEGORIES.includes(entry.category))
       || (entry.state === 'saved' && entry.category === null)
       || typeof entry.createdAt !== 'string' || !Number.isFinite(Date.parse(entry.createdAt))) {

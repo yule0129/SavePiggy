@@ -1,0 +1,11 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'cn.savepiggy.capture'
+version = '0.1.0'
+
+android {
+  namespace 'cn.savepiggy.capture'
+}
